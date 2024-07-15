@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 
 import VideoPanel from "../components/video-panel";
+import { customLocationsMock } from "../config/mocks";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string;
 
@@ -52,6 +53,14 @@ interface Restaurant {
   types: string[];
 }
 
+interface CustomLocation {
+  id: number;
+  address: string;
+  latitude: number;
+  longitude: number;
+  name?: string;
+}
+
 export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -60,6 +69,8 @@ export default function Home() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] =
     useState<Restaurant | null>(null);
+  const [customLocations, setCustomLocations] =
+    useState<CustomLocation[]>(customLocationsMock);
 
   const getRestaurantsInView = useCallback(
     async (bounds: mapboxgl.LngLatBounds): Promise<Restaurant[]> => {
@@ -76,7 +87,6 @@ export default function Home() {
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map((doc) => {
-          console.log("doc: ", doc.data());
           return { id: doc.id, ...(doc.data() as Restaurant) };
         });
       } catch (error) {
@@ -87,13 +97,8 @@ export default function Home() {
     []
   );
 
-  const addMarkers = useCallback((restaurants: Restaurant[]) => {
+  const addRestaurantsMarkers = useCallback((restaurants: Restaurant[]) => {
     if (!map.current) return;
-
-    // Remove existing markers
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = [];
-
     restaurants.forEach((restaurant) => {
       if (!map.current) return;
 
@@ -110,15 +115,59 @@ export default function Home() {
     });
   }, []);
 
-  const updateRestaurants = useCallback(async () => {
+  const getCustomLocationInView = useCallback(
+    async (bounds: mapboxgl.LngLatBounds): Promise<CustomLocation[]> => {
+      try {
+        return customLocations.filter((location) => {
+          console.log("location: ", location);
+          return (
+            location.latitude >= bounds.getSouth() &&
+            location.latitude <= bounds.getNorth() &&
+            location.longitude >= bounds.getWest() &&
+            location.longitude <= bounds.getEast()
+          );
+        });
+      } catch (error) {
+        console.error("Error fetching restaurants: ", error);
+        return [];
+      }
+    },
+    []
+  );
+
+  const addCustomLocationMarkers = useCallback(
+    (customLocationsInView: CustomLocation[]) => {
+      if (!map.current) return;
+      customLocationsInView.forEach((location) => {
+        if (!map.current) return;
+
+        const marker = new mapboxgl.Marker({ color: "#0000FF" })
+          .setLngLat([location.longitude, location.latitude])
+          .addTo(map.current);
+
+        marker.getElement().addEventListener("click", () => {
+          console.log("marker clicked");
+          // setSelectedRestaurant(restaurant);
+          // setIsPanelOpen(true);
+        });
+        markers.current.push(marker);
+      });
+    },
+    []
+  );
+
+  const updateMarkers = useCallback(async () => {
     if (!map.current) return;
     const bounds = map.current.getBounds();
-    console.log("bounds", bounds);
     if (!bounds) return;
     const restaurants = await getRestaurantsInView(bounds);
+    const customLocationsInView = await getCustomLocationInView(bounds);
     console.log("restaurants", restaurants);
-    addMarkers(restaurants);
-  }, [getRestaurantsInView, addMarkers]);
+    markers.current.forEach((marker) => marker.remove());
+    markers.current = [];
+    addRestaurantsMarkers(restaurants);
+    addCustomLocationMarkers(customLocationsInView);
+  }, [getRestaurantsInView, addRestaurantsMarkers]);
 
   useEffect(() => {
     console.log("useEffect", mapContainer.current!);
@@ -131,18 +180,18 @@ export default function Home() {
     });
 
     map.current.on("load", () => {
-      updateRestaurants();
+      updateMarkers();
     });
-    map.current.on("moveend", updateRestaurants);
+    map.current.on("moveend", updateMarkers);
 
     return () => {
       console.log("remvoe");
       // if (map.current) {
-      //   map.current.off("moveend", updateRestaurants);
+      //   map.current.off("moveend", updateMarkers);
       //   map.current.remove();
       // }
     };
-  }, [updateRestaurants]);
+  }, [updateMarkers]);
 
   return (
     <>
