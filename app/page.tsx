@@ -51,6 +51,7 @@ interface Restaurant {
   rating: number;
   num_reviews: number;
   types: string[];
+  place_id: string;
 }
 
 interface CustomLocation {
@@ -205,7 +206,7 @@ export default function Home() {
             name: selectedRestaurant.restaurant_name,
             rating: selectedRestaurant.rating,
             numReviews: selectedRestaurant.num_reviews,
-            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedRestaurant.formatted_address)}`,
+            googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${selectedRestaurant["place_id"]}`,
           }}
         />
       )}
