@@ -2,56 +2,34 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { initializeApp } from "firebase/app";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
-import {
-  getFirestore,
-  connectFirestoreEmulator,
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  where,
-} from "firebase/firestore";
+import { createClient } from "../utils/supabase/client";
 
 import VideoPanel from "../components/video-panel";
 import { customLocationsMock } from "../config/mocks";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string;
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: "japan-food-map.firebaseapp.com",
-  projectId: "japan-food-map",
-  storageBucket: "japan-food-map.appspot.com",
-  messagingSenderId: "462477636092",
-  appId: "1:462477636092:web:d3bc269071f5d030d18279",
-};
-
-const app = initializeApp(firebaseConfig);
-const functions = getFunctions(app);
-const db = getFirestore();
-
-if (process.env.NODE_ENV === "development") {
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-  connectFirestoreEmulator(db, "127.0.0.1", 8080);
-}
 
 interface Restaurant {
-  video_id: string;
-  restaurant_name: string;
-  location: string;
-  menu_item: string[];
-  price: number[];
-  order: number;
+  id: number;
+  created_at: string;
+  business_name?: string;
+  channel_id?: string;
+  description?: string;
+  duration?: string;
+  food_type?: string;
+  formatted_address?: string;
   latitude: number;
+  like_count?: number;
   longitude: number;
-  formatted_address: string;
-  rating: number;
-  num_reviews: number;
-  types: string[];
-  place_id: string;
+  num_reviews?: number;
+  place_id?: string;
+  published_date?: string;
+  rating?: number;
+  restaurant_name?: string;
+  title?: string;
+  video_id?: string;
+  view_count?: number;
 }
 
 interface CustomLocation {
@@ -66,6 +44,7 @@ export default function Home() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
+  const supabase = createClient();
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] =
@@ -76,20 +55,23 @@ export default function Home() {
   const getRestaurantsInView = useCallback(
     async (bounds: mapboxgl.LngLatBounds): Promise<Restaurant[]> => {
       try {
-        const restaurantsRef = collection(db, "restaurants");
-        const q = query(
-          restaurantsRef,
-          where("latitude", ">=", bounds.getSouth()),
-          where("latitude", "<=", bounds.getNorth()),
-          where("longitude", ">=", bounds.getWest()),
-          where("longitude", "<=", bounds.getEast()),
-          orderBy("rating", "desc"),
-          limit(30)
-        );
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map((doc) => {
-          return { id: doc.id, ...(doc.data() as Restaurant) };
-        });
+        const { data, error } = await supabase
+          .from("restaurants")
+          .select("*")
+          .gte("latitude", bounds.getSouth())
+          .lte("latitude", bounds.getNorth())
+          .gte("longitude", bounds.getWest())
+          .lte("longitude", bounds.getEast())
+          .order("rating", { ascending: false })
+          .limit(30);
+
+        if (error) {
+          console.error("Error fetching restaurants: ", error);
+          return [];
+        }
+        console.log("Bounds south: ", bounds.getSouth());
+        console.log("Fetched restaurants: ", data);
+        return data || [];
       } catch (error) {
         console.error("Error fetching restaurants: ", error);
         return [];
@@ -162,16 +144,14 @@ export default function Home() {
     const bounds = map.current.getBounds();
     if (!bounds) return;
     const restaurants = await getRestaurantsInView(bounds);
-    const customLocationsInView = await getCustomLocationInView(bounds);
-    console.log("restaurants", restaurants);
+    // const customLocationsInView = await getCustomLocationInView(bounds);
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
     addRestaurantsMarkers(restaurants);
-    addCustomLocationMarkers(customLocationsInView);
+    // addCustomLocationMarkers(customLocationsInView);
   }, [getRestaurantsInView, addRestaurantsMarkers]);
 
   useEffect(() => {
-    console.log("useEffect", mapContainer.current!);
     if (map.current) return;
     map.current = new mapboxgl.Map({
       container: mapContainer.current!,
@@ -201,12 +181,14 @@ export default function Home() {
         <VideoPanel
           isOpen={isPanelOpen}
           onClose={() => setIsPanelOpen(false)}
-          videoId={selectedRestaurant.video_id}
+          videoId={selectedRestaurant.video_id || ""}
           restaurantInfo={{
-            name: selectedRestaurant.restaurant_name,
-            rating: selectedRestaurant.rating,
-            numReviews: selectedRestaurant.num_reviews,
-            googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${selectedRestaurant["place_id"]}`,
+            name: selectedRestaurant.restaurant_name || "Unknown Restaurant",
+            rating: selectedRestaurant.rating || 0,
+            numReviews: selectedRestaurant.num_reviews || 0,
+            googleMapsUrl: selectedRestaurant.place_id
+              ? `https://www.google.com/maps/place/?q=place_id:${selectedRestaurant.place_id}`
+              : "#",
           }}
         />
       )}
