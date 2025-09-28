@@ -186,8 +186,10 @@ export default function Home() {
             rating: selectedRestaurant.rating || 0,
             numReviews: selectedRestaurant.num_reviews || 0,
             googleMapsUrl: selectedRestaurant.place_id
-              ? `https://www.google.com/maps/place/?q=place_id:${selectedRestaurant.place_id}`
-              : "#",
+              ? `https://www.google.com/maps/search/?api=1&query=${selectedRestaurant.latitude},${selectedRestaurant.longitude}&query_place_id=${selectedRestaurant.place_id}`
+              : selectedRestaurant.latitude && selectedRestaurant.longitude
+                ? `https://www.google.com/maps/search/?api=1&query=${selectedRestaurant.latitude},${selectedRestaurant.longitude}`
+                : "#",
           }}
           videoId={selectedRestaurant.video_id || ""}
           onClose={() => setIsPanelOpen(false)}

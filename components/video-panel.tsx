@@ -131,7 +131,7 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
                 startContent={<MapIcon className="h-5 w-5" />}
                 onPress={openGoogleMaps}
               >
-                Google Maps
+                Google Map
               </Button>
               <Button onPress={onClose}>Close</Button>
             </ModalFooter>
