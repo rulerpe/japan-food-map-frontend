@@ -2,13 +2,12 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClient } from "../utils/supabase/client";
 
+import { createClient } from "../utils/supabase/client";
 import VideoPanel from "../components/video-panel";
 import { customLocationsMock } from "../config/mocks";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string;
-
 
 interface Restaurant {
   id: number;
@@ -67,17 +66,18 @@ export default function Home() {
 
         if (error) {
           console.error("Error fetching restaurants: ", error);
+
           return [];
         }
-        console.log("Bounds south: ", bounds.getSouth());
-        console.log("Fetched restaurants: ", data);
+
         return data || [];
       } catch (error) {
         console.error("Error fetching restaurants: ", error);
+
         return [];
       }
     },
-    []
+    [],
   );
 
   const addRestaurantsMarkers = useCallback((restaurants: Restaurant[]) => {
@@ -102,7 +102,6 @@ export default function Home() {
     async (bounds: mapboxgl.LngLatBounds): Promise<CustomLocation[]> => {
       try {
         return customLocations.filter((location) => {
-          console.log("location: ", location);
           return (
             location.latitude >= bounds.getSouth() &&
             location.latitude <= bounds.getNorth() &&
@@ -112,10 +111,11 @@ export default function Home() {
         });
       } catch (error) {
         console.error("Error fetching restaurants: ", error);
+
         return [];
       }
     },
-    []
+    [],
   );
 
   const addCustomLocationMarkers = useCallback(
@@ -136,14 +136,16 @@ export default function Home() {
         markers.current.push(marker);
       });
     },
-    []
+    [],
   );
 
   const updateMarkers = useCallback(async () => {
     if (!map.current) return;
     const bounds = map.current.getBounds();
+
     if (!bounds) return;
     const restaurants = await getRestaurantsInView(bounds);
+
     // const customLocationsInView = await getCustomLocationInView(bounds);
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
@@ -166,7 +168,6 @@ export default function Home() {
     map.current.on("moveend", updateMarkers);
 
     return () => {
-      console.log("remvoe");
       // if (map.current) {
       //   map.current.off("moveend", updateMarkers);
       //   map.current.remove();
@@ -176,12 +177,10 @@ export default function Home() {
 
   return (
     <>
-      <div ref={mapContainer} style={{ width: "100vw", height: "100vh" }}></div>
+      <div ref={mapContainer} style={{ width: "100vw", height: "100vh" }} />
       {selectedRestaurant && (
         <VideoPanel
           isOpen={isPanelOpen}
-          onClose={() => setIsPanelOpen(false)}
-          videoId={selectedRestaurant.video_id || ""}
           restaurantInfo={{
             name: selectedRestaurant.restaurant_name || "Unknown Restaurant",
             rating: selectedRestaurant.rating || 0,
@@ -190,6 +189,8 @@ export default function Home() {
               ? `https://www.google.com/maps/place/?q=place_id:${selectedRestaurant.place_id}`
               : "#",
           }}
+          videoId={selectedRestaurant.video_id || ""}
+          onClose={() => setIsPanelOpen(false)}
         />
       )}
     </>

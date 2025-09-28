@@ -10,7 +10,6 @@ import {
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import { MapIcon } from "@heroicons/react/24/solid";
-import { Link } from "@nextui-org/link";
 
 interface VideoPanelProps {
   isOpen: boolean;
@@ -38,7 +37,7 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
     for (let i = 1; i <= 5; i++) {
       if (i <= fullStars) {
         stars.push(
-          <StarIconSolid key={i} className="h-5 w-5 text-yellow-400" />
+          <StarIconSolid key={i} className="h-5 w-5 text-yellow-400" />,
         );
       } else if (i === fullStars + 1 && hasHalfStar) {
         stars.push(
@@ -50,11 +49,11 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
             >
               <StarIconSolid className="h-5 w-5 text-yellow-400" />
             </div>
-          </div>
+          </div>,
         );
       } else {
         stars.push(
-          <StarIconOutline key={i} className="h-5 w-5 text-yellow-400" />
+          <StarIconOutline key={i} className="h-5 w-5 text-yellow-400" />,
         );
       }
     }
@@ -68,12 +67,13 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      placement="center"
-      size="md"
-      scrollBehavior="inside"
       backdrop="opaque"
+      classNames={{
+        base: "bg-white dark:bg-gray-800", // Light background in light mode, slightly darker in dark mode
+        header: "border-b border-gray-200 dark:border-gray-700",
+        footer: "border-t border-gray-200 dark:border-gray-700",
+      }}
+      isOpen={isOpen}
       motionProps={{
         variants: {
           enter: {
@@ -94,11 +94,10 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
           },
         },
       }}
-      classNames={{
-        base: "bg-white dark:bg-gray-800", // Light background in light mode, slightly darker in dark mode
-        header: "border-b border-gray-200 dark:border-gray-700",
-        footer: "border-t border-gray-200 dark:border-gray-700",
-      }}
+      placement="center"
+      scrollBehavior="inside"
+      size="md"
+      onClose={onClose}
     >
       <ModalContent>
         {(onClose) => (
@@ -109,13 +108,13 @@ const VideoPanel: React.FC<VideoPanelProps> = ({
             <ModalBody className="p-0">
               <div className="w-full" style={{ height: "100vh" }}>
                 <iframe
-                  title={restaurantInfo.name}
-                  width="100%"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   height="100%"
                   src={`https://www.youtube.com/embed/${videoId}`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+                  title={restaurantInfo.name}
+                  width="100%"
+                />
               </div>
             </ModalBody>
             <ModalFooter className="flex justify-between items-center">

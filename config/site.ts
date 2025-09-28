@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + NextUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Food Video Map",
+  description: "Find the best food places in Japan with videos!",
   navItems: [
     {
       label: "Home",
